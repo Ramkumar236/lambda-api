@@ -7,7 +7,6 @@ import * as cf from "@aws-cdk/aws-cloudfront"
 // import * as route53 from "@aws-cdk/aws-route53";
 import * as s3 from '@aws-cdk/aws-s3';
 
-
 export class LambdaApiStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
@@ -94,14 +93,13 @@ export class LambdaApiStack extends cdk.Stack {
           customOriginSource: {
             domainName: `${apiLambda.restApiId}.execute-api.${this.region}.${this.urlSuffix}`,
             originPath: `/${apiLambda.deploymentStage.stageName}`,
-            
           },
           behaviors: [
             {
               isDefaultBehavior: true,
-              allowedMethods: cf.CloudFrontAllowedMethods.ALL,
+              allowedMethods: cf.CloudFrontAllowedMethods.ALL
             },
-          ],   
+          ],
         },
         {
           behaviors: [
