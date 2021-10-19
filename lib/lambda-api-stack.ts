@@ -77,7 +77,7 @@ export class LambdaApiStack extends cdk.Stack {
     
     const distribution = new cf.CloudFrontWebDistribution(this, "webDistribution", {
       loggingConfig: {
-        bucket: new s3.Bucket(this, 'ramApiLambdaLogs', {
+        bucket: new s3.Bucket(this, 'LogsBucket', {
           bucketName: this.stackName,
           lifecycleRules: [
               {
