@@ -7,8 +7,8 @@ import * as cf from "@aws-cdk/aws-cloudfront"
 import * as route53 from "@aws-cdk/aws-route53";
 import * as s3 from '@aws-cdk/aws-s3';
 import { LogGroup } from "@aws-cdk/aws-logs";
-
-
+import * as certificatemanager from "@aws-cdk/aws-certificatemanager";
+import * as alias from "@aws-cdk/aws-route53-targets";
 export class LambdaApiStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
@@ -18,7 +18,7 @@ export class LambdaApiStack extends cdk.Stack {
     })
 
     pyLamdaRole.addManagedPolicy(
-      iam.ManagedPolicy.fromAwsManagedPolicyName('AdministratorAccess')
+      iam.ManagedPolicy.fromAwsManagedPolicyName('AWSLambda_FullAccess')
     )
     
     const pyTestLambda = new lambda.Function(this, 'pyTestLambda', {
@@ -92,7 +92,8 @@ export class LambdaApiStack extends cdk.Stack {
     //   comment: "RAM lambda Api" 
     // })
 
-    const siteDomain = "ramtypescriptdevops.com"
+    const siteDomain = "ramtypescriptdevops.com";
+
     const distribution = new cf.CloudFrontWebDistribution(this, "webDistribution", {
       aliasConfiguration: {
         acmCertRef: "arn:aws:acm:us-east-1:814445629751:certificate/293bb70e-fefc-44c1-ae5d-7b599349b801",
@@ -155,10 +156,14 @@ export class LambdaApiStack extends cdk.Stack {
       comment: "RAM lambda Api" 
     });
     new cdk.CfnOutput(this, "distributionDomainName", { value: distribution.distributionDomainName });
-    new route53.ARecord(this, 'CloudfrontAlias', {
-      zone: HostedZone,
-      target: route53.RecordTarget.fromAlias(new targets.CloudFrontTarget(distribution)),
-      recordName: 'ramtypescriptdevops.com'
+
+    const zone = route53.HostedZone.fromHostedZoneAttributes(this, 'ZenithWebFoundryZone', {
+      hostedZoneId: 'Z02242113E0R8LJCEV8I',
+      zoneName: 'ramtypescriptdevops.com' // your zone name here
+    });
+    new route53.ARecord(this, 'AliasRecord', {
+      zone,
+      target: route53.RecordTarget.fromAlias(new alias.CloudFrontTarget(distribution)),
     });
   }
 }
