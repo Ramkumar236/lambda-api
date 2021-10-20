@@ -6,6 +6,10 @@ import * as apigw from '@aws-cdk/aws-apigateway';
 import * as cf from "@aws-cdk/aws-cloudfront"
 // import * as route53 from "@aws-cdk/aws-route53";
 import * as s3 from '@aws-cdk/aws-s3';
+import { LogGroup } from "@aws-cdk/aws-logs"
+import { info } from 'console';
+import { off } from 'process';
+import { ApiKeySourceType } from '@aws-cdk/aws-apigateway';
 
 
 export class LambdaApiStack extends cdk.Stack {
@@ -47,6 +51,8 @@ export class LambdaApiStack extends cdk.Stack {
       timeout: cdk.Duration.seconds(300)
     })
     
+    const RamApiLog = new LogGroup(this, "RamApiLog");
+
     const apiLambda = new apigw.LambdaRestApi(this, 'RamLambdaEndpoint', {
       handler: pyTestLambda,
       endpointConfiguration: {
@@ -55,7 +61,13 @@ export class LambdaApiStack extends cdk.Stack {
       defaultMethodOptions: {
         authorizationType: apigw.AuthorizationType.NONE
       },
-      proxy: false
+      proxy: false,
+      deployOptions: {
+        accessLogDestination: new apigw.LogGroupLogDestination(RamApiLog),
+        accessLogFormat: apigw.AccessLogFormat.jsonWithStandardFields(),
+        loggingLevel: apigw.MethodLoggingLevel.INFO,
+        metricsEnabled: true,
+      },
     })
 
     apiLambda.root.addMethod('ANY');
