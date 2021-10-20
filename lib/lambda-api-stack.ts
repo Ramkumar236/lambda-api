@@ -4,9 +4,9 @@ import * as iam from "@aws-cdk/aws-iam";
 import path =  require('path');
 import * as apigw from '@aws-cdk/aws-apigateway';
 import * as cf from "@aws-cdk/aws-cloudfront"
-// import * as route53 from "@aws-cdk/aws-route53";
+import * as route53 from "@aws-cdk/aws-route53";
 import * as s3 from '@aws-cdk/aws-s3';
-import { LogGroup } from "@aws-cdk/aws-logs"
+import { LogGroup } from "@aws-cdk/aws-logs";
 
 
 export class LambdaApiStack extends cdk.Stack {
@@ -92,7 +92,13 @@ export class LambdaApiStack extends cdk.Stack {
     //   comment: "RAM lambda Api" 
     // })
 
+    const siteDomain = "ramtypescriptdevops.com"
     const distribution = new cf.CloudFrontWebDistribution(this, "webDistribution", {
+      aliasConfiguration: {
+        acmCertRef: "arn:aws:acm:us-east-1:814445629751:certificate/293bb70e-fefc-44c1-ae5d-7b599349b801",
+        securityPolicy: cf.SecurityPolicyProtocol.TLS_V1_2_2018,
+        names: [siteDomain],
+      },
       loggingConfig: {
         bucket: new s3.Bucket(this, 'LogBucket', {
           bucketName: "ramlambdalogbucket",
@@ -149,12 +155,10 @@ export class LambdaApiStack extends cdk.Stack {
       comment: "RAM lambda Api" 
     });
     new cdk.CfnOutput(this, "distributionDomainName", { value: distribution.distributionDomainName });
-    // new route53.ARecord(this, 'CloudfrontAlias', {
-    //   zone: externalHostedZone,
-    //   target: route53.RecordTarget.fromAlias(new targets.CloudFrontTarget(distribution)),
-    //   recordName: 'ramtypescriptdevops.com'
-    // });
-
-
+    new route53.ARecord(this, 'CloudfrontAlias', {
+      zone: HostedZone,
+      target: route53.RecordTarget.fromAlias(new targets.CloudFrontTarget(distribution)),
+      recordName: 'ramtypescriptdevops.com'
+    });
   }
 }
