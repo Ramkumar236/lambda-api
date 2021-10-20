@@ -7,6 +7,7 @@ import * as cf from "@aws-cdk/aws-cloudfront"
 // import * as route53 from "@aws-cdk/aws-route53";
 import * as s3 from '@aws-cdk/aws-s3';
 
+
 export class LambdaApiStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
@@ -46,27 +47,34 @@ export class LambdaApiStack extends cdk.Stack {
       timeout: cdk.Duration.seconds(300)
     })
     
-    const apiLambda = new apigw.LambdaRestApi(this, 'Endpoint', {
+    const apiLambda = new apigw.LambdaRestApi(this, 'RamLambdaEndpoint', {
       handler: pyTestLambda,
-      
       endpointConfiguration: {
         types: [apigw.EndpointType.REGIONAL]
       },
       defaultMethodOptions: {
         authorizationType: apigw.AuthorizationType.NONE
       },
+      proxy: false
     })
 
-    // const apiRoute = apiLambda.root.addResource("hello")
-    // apiRoute.addMethod(
-    //     "GET",
-    //     new apigw.LambdaIntegration(helloLambda),   
-    //   )
-    // const apiRoute1 = apiLambda.root.addResource("world")
-    // apiRoute1.addMethod(
-    //     "GET",
-    //     new apigw.LambdaIntegration(worldLambda)
-    //   );
+    apiLambda.root.addMethod('ANY');
+    const hello = apiLambda.root.addResource("hello")
+    hello.addMethod(
+      "GET",
+      new apigw.LambdaIntegration(helloLambda),   
+    )
+    hello.addMethod(
+      "POST",
+    )
+    const world = apiLambda.root.addResource("world")
+    world.addMethod(
+      "GET",
+      new apigw.LambdaIntegration(worldLambda)
+    );
+    world.addMethod(
+      "POST"
+    )
 
     // const distribution = new cf.Distribution(this, 'myCloudFront',{
     //   defaultBehavior: {
@@ -74,17 +82,19 @@ export class LambdaApiStack extends cdk.Stack {
     //   },
     //   comment: "RAM lambda Api" 
     // })
-    
+
     const distribution = new cf.CloudFrontWebDistribution(this, "webDistribution", {
       loggingConfig: {
-        bucket: new s3.Bucket(this, 'LogsBucket', {
-          bucketName: this.stackName,
+        bucket: new s3.Bucket(this, 'LogBucket', {
+          bucketName: "ramlambdalogbucket",
           lifecycleRules: [
               {
                 enabled: true,
                 expiration: cdk.Duration.days(30),
               },
             ],
+            removalPolicy: cdk.RemovalPolicy.DESTROY,
+            autoDeleteObjects: true,
           }),
           includeCookies: true,
         },
@@ -126,9 +136,7 @@ export class LambdaApiStack extends cdk.Stack {
           },
         },
       ],
-      
       defaultRootObject: "",
-      
       comment: "RAM lambda Api" 
     });
     new cdk.CfnOutput(this, "distributionDomainName", { value: distribution.distributionDomainName });
@@ -138,6 +146,6 @@ export class LambdaApiStack extends cdk.Stack {
     //   recordName: 'ramtypescriptdevops.com'
     // });
 
-    // The code that defines your stack goes here
+
   }
 }
