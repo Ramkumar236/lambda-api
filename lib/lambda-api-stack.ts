@@ -7,9 +7,6 @@ import * as cf from "@aws-cdk/aws-cloudfront"
 // import * as route53 from "@aws-cdk/aws-route53";
 import * as s3 from '@aws-cdk/aws-s3';
 import { LogGroup } from "@aws-cdk/aws-logs"
-import { info } from 'console';
-import { off } from 'process';
-import { ApiKeySourceType } from '@aws-cdk/aws-apigateway';
 
 
 export class LambdaApiStack extends cdk.Stack {
