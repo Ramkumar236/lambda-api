@@ -7,8 +7,8 @@ import * as cf from "@aws-cdk/aws-cloudfront"
 import * as route53 from "@aws-cdk/aws-route53";
 import * as s3 from '@aws-cdk/aws-s3';
 import { LogGroup } from "@aws-cdk/aws-logs";
-import * as certificatemanager from "@aws-cdk/aws-certificatemanager";
 import * as alias from "@aws-cdk/aws-route53-targets";
+
 export class LambdaApiStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
@@ -152,12 +152,21 @@ export class LambdaApiStack extends cdk.Stack {
           },
         },
       ],
+      errorConfigurations:
+      [
+        {
+          errorCode: 404,
+          errorCachingMinTtl: 0,
+          "responseCode": 200,
+          "responsePagePath": "//cloudfronterrorbucket.s3.sa-east-1.amazonaws.com/error.html"
+        },
+      ],
       defaultRootObject: "",
       comment: "RAM lambda Api" 
     });
     new cdk.CfnOutput(this, "distributionDomainName", { value: distribution.distributionDomainName });
 
-    const zone = route53.HostedZone.fromHostedZoneAttributes(this, 'ZenithWebFoundryZone', {
+    const zone = route53.HostedZone.fromHostedZoneAttributes(this, 'Zone', {
       hostedZoneId: 'Z02242113E0R8LJCEV8I',
       zoneName: 'ramtypescriptdevops.com' // your zone name here
     });
