@@ -2,7 +2,7 @@
 import 'source-map-support/register';
 import * as cdk from '@aws-cdk/core';
 import { LambdaApiStack } from '../lib/lambda-api-stack';
-
+import { apiwaf } from '../lib/api-waf'
 const app = new cdk.App();
 new LambdaApiStack(app, 'LambdaApiStack', {
   /* If you don't specify 'env', this stack will be environment-agnostic.
@@ -19,3 +19,4 @@ new LambdaApiStack(app, 'LambdaApiStack', {
 
   /* For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html */
 });
+new apiwaf (app, 'apiwaf', {});

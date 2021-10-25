@@ -8,6 +8,7 @@ import * as route53 from "@aws-cdk/aws-route53";
 import * as s3 from '@aws-cdk/aws-s3';
 import { LogGroup } from "@aws-cdk/aws-logs";
 import * as alias from "@aws-cdk/aws-route53-targets";
+import * as wafv2 from '@aws-cdk/aws-wafv2';
 
 export class LambdaApiStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
@@ -91,9 +92,49 @@ export class LambdaApiStack extends cdk.Stack {
     //   },
     //   comment: "RAM lambda Api" 
     // })
+    
+    const ipSet = new wafv2.CfnIPSet(this, 'IPSet', {
+      addresses: ['117.98.161.54/32'],
+      scope: 'CLOUDFRONT',
+      ipAddressVersion: 'IPV4'
+    });
+
+    // Create WAFv2 Rule IP Whitelisting
+    const rules: wafv2.CfnWebACL.RuleProperty[] = [];
+    rules.push(
+      {
+        name: 'IPWhitelistRule', // Note the PascalCase for all the properties
+        priority: 1,
+        action: {
+          allow: {}
+        },
+        statement: {
+          ipSetReferenceStatement: {
+            arn: ipSet.attrArn
+          }
+        },
+        visibilityConfig: {
+          cloudWatchMetricsEnabled: true,
+          metricName: 'ipWhitelist',
+          sampledRequestsEnabled: false,
+        }
+      }
+    );
+
+    const webACL = new wafv2.CfnWebACL(this, 'WebACL', {
+      defaultAction: {
+        block: {},
+      },
+      scope: 'CLOUDFRONT',
+      visibilityConfig: {
+        cloudWatchMetricsEnabled: true,
+        metricName: 'waf',
+        sampledRequestsEnabled: false,
+      },
+    });
+    webACL.addPropertyOverride("rules", rules);
 
     const siteDomain = "ramtypescriptdevops.com";
-
     const distribution = new cf.CloudFrontWebDistribution(this, "webDistribution", {
       aliasConfiguration: {
         acmCertRef: "arn:aws:acm:us-east-1:814445629751:certificate/293bb70e-fefc-44c1-ae5d-7b599349b801",
@@ -123,7 +164,7 @@ export class LambdaApiStack extends cdk.Stack {
           behaviors: [
             {
               isDefaultBehavior: true,
-              allowedMethods: cf.CloudFrontAllowedMethods.ALL
+              allowedMethods: cf.CloudFrontAllowedMethods.ALL,
             },
           ],
         },
@@ -162,6 +203,7 @@ export class LambdaApiStack extends cdk.Stack {
         },
       ],
       defaultRootObject: "",
+      webACLId: webACL.attrArn,
       comment: "RAM lambda Api" 
     });
     new cdk.CfnOutput(this, "distributionDomainName", { value: distribution.distributionDomainName });
