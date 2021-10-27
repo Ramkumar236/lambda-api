@@ -134,6 +134,17 @@ export class LambdaApiStack extends cdk.Stack {
     });
     webACL.addPropertyOverride("rules", rules);
 
+    // const cachePo = new cf.CachePolicy(this, 'cachePo', {
+    //   queryStringBehavior: cf.CacheQueryStringBehavior.none(),
+    //   headerBehavior: cf.CacheHeaderBehavior.none(),
+    //   cookieBehavior: cf.CacheCookieBehavior.none(),
+    //   defaultTtl: cdk.Duration.days(30),
+    //   maxTtl: cdk.Duration.days(30),
+    //   minTtl: cdk.Duration.days(30),
+    //   enableAcceptEncodingBrotli: true,
+    //   enableAcceptEncodingGzip: true,
+    // });
+
     const siteDomain = "ramtypescriptdevops.com";
     const distribution = new cf.CloudFrontWebDistribution(this, "webDistribution", {
       aliasConfiguration: {
@@ -173,11 +184,27 @@ export class LambdaApiStack extends cdk.Stack {
             {
               allowedMethods: cf.CloudFrontAllowedMethods.ALL,
               pathPattern: "/hello",
+              defaultTtl: cdk.Duration.hours(2),
+              minTtl: cdk.Duration.hours(2),
+              maxTtl: cdk.Duration.hours(2),
+              forwardedValues: {
+                queryString: true,
+                headers: [
+                  'Authorization',
+                  'Content-Type',
+                  'Accept',
+                  'Accept-Encoding',
+                ],
+                cookies: {
+                  "forward": 'ALL'
+                }
+              },
             }
           ],
            customOriginSource: {
             domainName: `${apiLambda.restApiId}.execute-api.${this.region}.${this.urlSuffix}`,
-            originPath: `/${apiLambda.deploymentStage.stageName}`
+            originPath: `/${apiLambda.deploymentStage.stageName}`,
+            
           },
         },
         {
@@ -185,18 +212,34 @@ export class LambdaApiStack extends cdk.Stack {
             {
               allowedMethods: cf.CloudFrontAllowedMethods.ALL,
               pathPattern: "/world",
+              cachedMethods: cf.CloudFrontAllowedCachedMethods.GET_HEAD,
+              defaultTtl: cdk.Duration.hours(1),
+              minTtl: cdk.Duration.hours(1),
+              maxTtl: cdk.Duration.hours(1),
+              forwardedValues: {
+                queryString: true,
+                headers: [
+                  'Authorization',
+                  'Content-Type',
+                  'Accept',
+                  'Accept-Encoding',
+                ],
+                cookies: {
+                  "forward": 'ALL'
+                }
+              },
             }
           ],
            customOriginSource: {
             domainName: `${apiLambda.restApiId}.execute-api.${this.region}.${this.urlSuffix}`,
-            originPath: `/${apiLambda.deploymentStage.stageName}`
+            originPath: `/${apiLambda.deploymentStage.stageName}`,
           },
         },
       ],
       errorConfigurations:
       [
         {
-          errorCode: 404,
+          errorCode: 500,
           errorCachingMinTtl: 0,
           "responseCode": 200,
           "responsePagePath": "//cloudfronterrorbucket.s3.sa-east-1.amazonaws.com/error.html"
@@ -204,6 +247,7 @@ export class LambdaApiStack extends cdk.Stack {
       ],
       defaultRootObject: "",
       webACLId: webACL.attrArn,
+      viewerProtocolPolicy: cf.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
       comment: "RAM lambda Api" 
     });
     new cdk.CfnOutput(this, "distributionDomainName", { value: distribution.distributionDomainName });
